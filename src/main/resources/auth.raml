@@ -1,0 +1,33 @@
+#%RAML 0.8
+title: continuos_integration
+version: 1.0
+baseUri: https://test.salesforce.com
+/services/oauth2/token:
+ post:
+  body: 
+    application/x-www-form-urlencoded:
+      formParameters: 
+        username:
+          required: true
+          example: integration_user@sfdc_projectname.com.full
+        password:
+          required: true
+          example: a_password
+          description: a_password + pass_token
+        grant_type:
+          required: true
+          example: password
+        client_secret:
+          required: true
+          example: 1475394098000000000
+        client_id:
+          required: true
+          example: 6MVG9od6vNol.eBhFbbvi4g4Z4g60ylquEQdE0R5ZoeYvJEsFVy69GfcDfRu7oY0_yNqsOngHiI3SCrmBT3ac
+
+      
+    
+
+        
+  
+        
+  

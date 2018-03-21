@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:schedulers="http://www.mulesoft.org/schema/mule/schedulers" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:quartz="http://www.mulesoft.org/schema/mule/quartz" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:oauth2="http://www.mulesoft.org/schema/mule/oauth2" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/oauth2 http://www.mulesoft.org/schema/mule/oauth2/current/mule-oauth2.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/quartz http://www.mulesoft.org/schema/mule/quartz/current/mule-quartz.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/schedulers http://www.mulesoft.org/schema/mule/schedulers/current/mule-schedulers.xsd">
+    <context:property-placeholder location="classpath:app.properties"/>
+    <spring:beans>
+    	<spring:import resource="classpath:spring-application_context.xml"/>
+	</spring:beans>
+    <flow name="import_dispatcherFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/import" doc:name="HTTP"/>
+        <logger message="Migration process started" level="INFO" doc:name="Logger"/>
+        <flow-ref name="insert_objectFlow" doc:name="Flow Reference"/>
+    </flow>
+    <flow name="insert_objectFlow" initialState="started" processingStrategy="synchronous">
+        <composite-source doc:name="Composite Source">
+            <file:inbound-endpoint path="${extract.path.working}" moveToPattern="${import.filename.archive}" moveToDirectory="${import.path.archive}" responseTimeout="10000" doc:name="Automatic import"/>
+            <file:inbound-endpoint path="${import.path.manual}" moveToPattern="${import.filename.manual.archive}" moveToDirectory="${import.path.archive]" responseTimeout="10000" doc:name="Manual Import"/>
+        </composite-source> 
+        <logger message="Acquired file: #[message.inboundProperties.originalFilename]" level="INFO" doc:name="Current file"/>
+        <choice doc:name="Choice">
+            <when expression="#[message.inboundProperties.originalFilename.startsWith('1')]">
+                <logger message="ok 1" level="INFO" doc:name="Logger"/>
+            </when>
+            <when expression="#[message.inboundProperties.originalFilename.startsWith('2')]">
+                <logger message="ok 2" level="INFO" doc:name="Logger"/>
+            </when>
+            <otherwise>
+                <logger message="Error... error message to be defined" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+        <logger message="Not yet implemented" level="INFO" doc:name="Logger"/>
+    </flow>
+
+   
+</mule>

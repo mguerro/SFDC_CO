@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:oauth2="http://www.mulesoft.org/schema/mule/oauth2" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/oauth2 http://www.mulesoft.org/schema/mule/oauth2/current/mule-oauth2.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <context:property-placeholder location="classpath:app.properties"/>
+    <spring:beans>
+    	<spring:import resource="classpath:spring-application_context.xml"/>
+	</spring:beans>
+    <flow name="AuthorizationFlow">
+        <logger message="Authrorization Request" level="INFO" doc:name="Logger"/>
+        <http:request config-ref="SF_Request_Configuration" path="/services/oauth2/token" method="POST" parseResponse="false" doc:name="HTTP">
+            <http:request-builder>
+                <http:query-param paramName="password" value="#[flowVars.password]"/>
+                <http:query-param paramName="client_id" value="#[flowVars.clientId]"/>
+                <http:query-param paramName="client_secret" value="#[flowVars.clientSecret]"/>
+                <http:query-param paramName="grant_type" value="password"/>
+                <http:query-param paramName="username" value="#[flowVars.username]"/>
+                <http:header headerName="Content-Type" value="application/x-www-form-urlencoded"/>
+            </http:request-builder>
+        </http:request>
+
+        <flow-ref name="Set_Token_And_Issue_Subflow" doc:name="Set_Token_And_Issue_Subflow"/>
+        <logger  level="INFO" doc:name="Log Token" message="#[&quot;Token: &quot;+flowVars.accessToken]"/>
+        <logger message="#[&quot;Istance: &quot;+flowVars.instance]" level="INFO" doc:name="Log istance"/>
+         
+    </flow>
+    <!--  
+    <sub-flow name="setParams">
+        <set-variable variableName="query" value="#[payload.query]" doc:name="Set Query"/>
+        <set-variable variableName="queryType" value="#[payload.query_type]" doc:name="Set Query Type"/>
+        <set-variable variableName="clientId" value="#[payload.client_id]" doc:name="Set Client Id"/>
+        <set-variable variableName="clientSecret" value="#[payload.client_secret]" doc:name="Set Client Secret"/>
+        <set-variable variableName="username" value="#[payload.username]" doc:name="Set Username"/>
+        <set-variable variableName="password" value="#[payload.password]" doc:name="Set Password"/>
+        <set-variable variableName="endpoint" value="#[payload.endpoint]" doc:name="Set Endpoint"/>
+    </sub-flow>
+    -->
+    <sub-flow name="Set_Token_And_Issue_Subflow">
+        <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+        <logger message="#['Response: '+payload]" level="INFO" doc:name="Log Response"/>
+        <set-variable variableName="accessToken" value="#[payload.access_token]" doc:name="Set Token"/>
+        <set-variable variableName="instance" value="#[payload.instance_url.replace(&quot;https://&quot;,&quot;&quot;)]" doc:name="Set Instance"/>
+    </sub-flow>
+
+</mule>

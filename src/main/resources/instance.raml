@@ -1,0 +1,21 @@
+#%RAML 0.8
+title: continuos_integration_instance
+version: 1.0
+/services/data/v20.0/query/:
+  get:
+    headers: 
+      Authorization:
+        example: Bearer 71543fa6a11044b0a9f3a8354ddcb00e
+    queryParameters:
+      q:
+        displayName: query_string
+        required: true
+        example: SELECT name FROM Account
+/services/data/v20.0/jobs/ingest/:
+  post:
+    headers: 
+      Authorization:
+        example: Bearer 74943fa6a12579b0a9f3a8354aacb00e
+  
+        
+  

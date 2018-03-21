@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:oauth2="http://www.mulesoft.org/schema/mule/oauth2" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/oauth2 http://www.mulesoft.org/schema/mule/oauth2/current/mule-oauth2.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+    <context:property-placeholder location="classpath:app.properties"/>
+    <spring:beans>
+    	<spring:import resource="classpath:spring-application_context.xml"/>
+	</spring:beans>
+    <flow name="queryFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/export" allowedMethods="GET" doc:name="HTTP"/>
+        <custom-transformer class="com.accenture.co.services.configuration.ConfigurationService" doc:name="Get Ant Mig Tool Properties"/>
+        <flow-ref name="Set_Auth_Params" doc:name="Flow Reference"/>
+        <flow-ref name="AuthorizationFlow" doc:name="AuthorizationFlow"/>
+
+        <set-payload value="#[sessionVars.get('operations')]" doc:name="Set Operations"/>
+        <foreach doc:name="For Each">
+            <set-variable variableName="queryType" value="#[payload.getQueryType()]" doc:name="Set Query Type"/>
+            <set-variable variableName="timestamp" value="#[java.time.LocalTime.now()]" doc:name="Set TimeStamp"/>
+            <logger message="Running query" level="INFO" doc:name="Logger"/>
+            <http:request config-ref="Benetton_Request_Configuration" path="/services/data/v20.0/query/" method="GET" followRedirects="false" parseResponse="false" doc:name="Query Rest Service">
+                <http:request-builder>
+                    <http:query-param paramName="q" value="#[payload.getQuery()]"/>
+                    <http:header headerName="Authorization" value="#[&quot;Bearer &quot;+flowVars.accessToken]"/>
+                </http:request-builder>
+            </http:request>
+            <logger message="#['Done, took '+java.time.Duration.between(flowVars.timestamp,java.time.LocalTime.now()).getSeconds()+' seconds'] " level="INFO" doc:name="Logger"/>
+            <choice doc:name="Choice">
+                <when expression="#[&quot;contact-account&quot;.equalsIgnoreCase(flowVars.queryType)]">
+                    <logger message="Switching to AccountFlow" level="INFO" doc:name="Logger"/>
+                    <flow-ref name="AccountFlow" doc:name="AccountFlow"/>
+                </when>
+                <when expression="#[&quot;other&quot;.equalsIgnoreCase(flowVars.queryType)]">
+                    <logger message="Switching to ContactFlow" level="INFO" doc:name="Logger"/>
+                    <flow-ref name="ContactFlow" doc:name="ContactFlow"/>
+                </when>
+                <otherwise>
+                    <set-property propertyName="http.status" value="500" doc:name="Set Status Code 500"/>
+                    <set-payload value="No mapper found for this object" doc:name="Set Payload"/>
+                </otherwise>
+            </choice>
+        </foreach>
+        <set-payload value="end" doc:name="Set Payload"/>
+        <exception-strategy ref="continuon_integration_default_exception" doc:name="Reference Exception Strategy"/>
+    </flow>
+	<sub-flow name="Set_Auth_Params">
+        <set-variable variableName="clientId" value="#[sessionVars.get('system.source.auth.client_id')]" doc:name="Set Client Id"/>
+        <set-variable variableName="clientSecret" value="#[sessionVars.get('system.source.auth.client_secret')]" doc:name="Set Client Secret"/>
+        <set-variable variableName="username" value="#[sessionVars.get('system.source.auth.username')]" doc:name="Set Username"/>
+        <set-variable variableName="password" value="#[sessionVars.get('system.source.auth.password')]" doc:name="Set Password"/>
+        <set-variable variableName="endpoint" value="#[sessionVars.get('system.source.auth.endpoint')]" doc:name="Set Endpoint"/>
+    </sub-flow>
+
+</mule>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:oauth2="http://www.mulesoft.org/schema/mule/oauth2" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/oauth2 http://www.mulesoft.org/schema/mule/oauth2/current/mule-oauth2.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
+    <context:property-placeholder location="classpath:app.properties"/>
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081"  doc:name="HTTP Listener Configuration"/>
+    <http:request-config name="Benetton_Request_Configuration" host="#[flowVars.instance]" port="443" doc:name="HTTP Request Configuration"   usePersistentConnections="false" responseTimeout="${service.query.select.timeout}" protocol="HTTPS">
+        <http:raml-api-configuration location="instance.raml"/>
+
+
+    </http:request-config>  
+    <http:request-config name="SF_Request_Configuration"     doc:name="HTTP Request Configuration" usePersistentConnections="false" responseTimeout="${service.auth.request.timeout}" host="#[flowVars.endpoint]" port="443" protocol="HTTPS">
+        <http:raml-api-configuration location="auth.raml"/>
+    </http:request-config>
+
+    
+    <choice-exception-strategy name="continuon_integration_default_exception" >
+            <catch-exception-strategy when="#[exception.causedBy(com.accenture.co.strategies.exceptions.BadCredentialsOathException)]" doc:name="Bad Credentials Exception Strategy">
+                <set-payload value="Bad credentials" doc:name="Set Payload"/>
+                <set-property propertyName="http.status" value="401" doc:name="Set Status Code"/>
+            </catch-exception-strategy>
+            <catch-exception-strategy when="#[exception.causedBy(com.accenture.co.strategies.exceptions.BadQueryTypeException)]" doc:name="Bad Query Params Exception Strategy">
+                <set-payload value="Bad query params" doc:name="Set Payload"/>
+                <set-property propertyName="http.status" value="401" doc:name="Set Status Code"/>
+            </catch-exception-strategy>
+	        <catch-exception-strategy when="#[exception.causedBy(java.lang.Exception)]" doc:name="Exception">
+	            <set-payload value="Generic Error" doc:name="Set Payload"/>
+	            <set-property propertyName="http.status" value="400" doc:name="Set Status Code"/>
+	        </catch-exception-strategy>
+      </choice-exception-strategy>
+
+</mule>

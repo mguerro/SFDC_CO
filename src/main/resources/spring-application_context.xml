@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   					   http://www.springframework.org/schema/beans/spring-beans.xsd">
+	   
+	   <bean id="configurationService" class="com.accenture.co.services.configuration.ConfigurationService" />
+	   <bean id ="validator" class="com.accenture.co.strategies.validators.impl.DefaultValidator"/> 
+	    
+	   <bean id="accountContactMapper" class="com.accenture.co.mappers.impl.AccountContactMapper"/>	   
+	   <!--  
+	   <bean id="contactMapper" class="com.accenture.co.mappers.impl.ContactMapper"/>
+		and so on... -->
+	   
+	   <!--    
+	   <bean id="mapperStrategy" class="com.accenture.co.strategies.impl.DefaultMapperStategy">
+	   		<property name="implementationsMap">
+				<map>
+					<entry key="contact-account" value-ref="accountMapper" />			
+				</map>
+			</property>
+		</bean>
+		--> 
+		<bean id="contact-account" class="com.accenture.co.factory.impl.EntityFactory" factory-method="createMapperType">
+    		<constructor-arg value="contact-account" />
+		</bean>
+		<!--  
+		<bean id="contact" class="com.accenture.co.factory.impl.EntityFactory" factory-method="createMapperType">
+    		<constructor-arg value="contact" />
+		</bean>
+		-->
+</beans>	   					   

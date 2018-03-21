@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:oauth2="http://www.mulesoft.org/schema/mule/oauth2" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/oauth2 http://www.mulesoft.org/schema/mule/oauth2/current/mule-oauth2.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+    <context:property-placeholder location="classpath:app.properties"/>
+    <spring:beans>
+    	<spring:import resource="classpath:spring-application_context.xml"/>
+	</spring:beans>   
+    <flow name="AccountFlow">
+        <json:json-to-object-transformer doc:name="JSON to Object"/>
+        <logger message="Generating csv entities" level="INFO" doc:name="Logger"/>
+        <set-variable variableName="timestamp" value="#[java.time.LocalTime.now()]" doc:name="Set TimeStamp"/>
+        <custom-transformer class="com.accenture.co.transformers.MapperTransformer" doc:name="Mapper">
+
+        </custom-transformer>
+
+        <logger message="#['Done, took '+java.time.Duration.between(flowVars.timestamp,java.time.LocalTime.now()).getSeconds()+' seconds']" level="INFO" doc:name="Logger"/>
+        <foreach doc:name="For Each">
+            <scatter-gather doc:name="Scatter-Gather">
+                <file:outbound-endpoint path="${extract.path.archive}#[payload.key]" outputPattern="#[payload.key]${extract.filename.archive}" responseTimeout="10000" doc:name="File Account Archive"/>
+                <file:outbound-endpoint path="${extract.path.working}" outputPattern="#[flowVars.counter]_#[payload.key]${extract.filename}" responseTimeout="10000" doc:name="File To Be Processed"/>
+            </scatter-gather>
+        </foreach>
+
+        <set-payload value="End" doc:name="Set Payload"/>
+
+    </flow>
+    <flow name="ContactFlow">
+        <logger level="INFO" doc:name="Logger" message="Not yet implemented"/>
+
+    </flow>
+</mule>
